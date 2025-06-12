@@ -48,7 +48,7 @@ class Octopus
     results_gas = results_process(json_response_results_gas)
     week_gas_average = (results_gas.values.sum(0.0) / results_gas.values.size)
     alert_gas = last_day_gas_consumption > 1.2 * week_gas_average
-    send_warning(last_day, 0.29.to_s, todays_leccy_consumption.round(2).to_s, week_gas_average.round(2).to_s, last_day_gas_consumption.round(2).to_s) #if @alert_leccy || @alert_gas
+    send_warning(last_day, 0.29.to_s, todays_leccy_consumption.round(2).to_s, week_gas_average.round(2).to_s, last_day_gas_consumption.round(2).to_s) if @alert_leccy || @alert_gas
     # send_warning('Monday, 14 Jan', '2.0', '2.5', '1.5', '2.0')
   end
 
