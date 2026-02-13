@@ -7,6 +7,10 @@ require_relative 'twilio_message.rb'
 require 'byebug'
 
 class Octopus
+  LECCY_THRESHOLD = 4.0
+  GAS_THRESHOLD = 1.2
+  LECCY_URL = "https://api.octopus.energy/v1/electricity-meter-points"
+  GAS_URL = "https://api.octopus.energy/v1/gas-meter-points"
   attr_reader :url_leccy, :url_gas
   def initialize(octopus, twilio)
     octopus.merge(twilio).each do |k,v|
@@ -17,9 +21,9 @@ class Octopus
   
   def set_urls
     period_from = Time.now.advance(days: -7).strftime('%Y-%m-%dT00:00:00Z')
-    @url_leccy = "https://api.octopus.energy/v1/electricity-meter-points/#{@electricity_mpan}/meters/#{@electricity_meter}/" \
+    @url_leccy = "#{LECCY_URL}/#{@electricity_mpan}/meters/#{@electricity_meter}/" \
                  "consumption?period_from=#{period_from}&group_by=day"
-    @url_gas = "https://api.octopus.energy/v1/gas-meter-points/#{@gas_mprn}/meters/#{@gas_meter}/" \
+    @url_gas = "#{GAS_URL}/#{@gas_mprn}/meters/#{@gas_meter}/" \
                "consumption?period_from=#{period_from}&group_by=day"
   end
 
@@ -40,15 +44,15 @@ class Octopus
     set_urls
     json_response_results_leccy = get_results(url_leccy)
     todays_leccy_consumption = json_response_results_leccy.first['consumption']
-    @alert_leccy = todays_leccy_consumption > 0.29
+    @alert_leccy = todays_leccy_consumption > LECCY_THRESHOLD
 
     json_response_results_gas = get_results(url_gas)
     last_day = Date.parse(json_response_results_gas.first['interval_start']).strftime('%A, %d %B')
     last_day_gas_consumption = json_response_results_gas.first['consumption']
     results_gas = results_process(json_response_results_gas)
     week_gas_average = (results_gas.values.sum(0.0) / results_gas.values.size)
-    @alert_gas = last_day_gas_consumption > 1.2 * week_gas_average
-    send_warning(last_day, 0.29.to_s, todays_leccy_consumption.round(2).to_s, week_gas_average.round(2).to_s, last_day_gas_consumption.round(2).to_s) if alert
+    @alert_gas = last_day_gas_consumption > GAS_THRESHOLD * week_gas_average
+    send_warning(last_day, LECCY_THRESHOLD.to_s, todays_leccy_consumption.round(2).to_s, week_gas_average.round(2).to_s, last_day_gas_consumption.round(2).to_s) if alert
     # send_warning('Monday, 14 Jan', '2.0', '2.5', '1.5', '2.0')
   end
 
